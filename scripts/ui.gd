@@ -212,8 +212,12 @@ func show_screen(name: String) -> void:
 	_pause_btn.mouse_filter = mf
 
 
+## Set by the test tools to show the touch controls on a PC.
+static var force_touch := false
+
+
 static func is_touch() -> bool:
-	return DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
+	return force_touch or DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
 
 
 # ---------- HUD ----------
@@ -526,6 +530,7 @@ func refresh_settings() -> void:
 	for k in _gfx_btns:
 		_gfx_btns[k].set_pressed_no_signal(k == Save.get_s("gfx"))
 	_fps.visible = Save.get_s("show_fps")
+	touch.debug = Save.get_s("show_fps")
 	set_cam_name(Save.get_s("view"))
 
 

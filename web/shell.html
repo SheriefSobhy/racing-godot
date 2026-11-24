@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+		<meta name="theme-color" content="#0b1220">
+		<title>$GODOT_PROJECT_NAME</title>
+		<!--
+		Custom page for the web build (based on Godot 4.7's default shell).
+		Adds: a progress bar with megabytes from the first moment, a WebGL 2
+		check, readable error messages with a Reload button instead of a blank
+		screen, a note when loading is slow, a "turn your phone" hint, and
+		fullscreen + landscape lock on the first tap on phones.
+		-->
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: #0b1220;
+	overflow: hidden;
+	touch-action: none;
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 14px;
+	padding: 24px;
+	box-sizing: border-box;
+	background: radial-gradient(circle at 50% 40%, #1c2b4a, #0b1220 70%);
+	text-align: center;
+	z-index: 2;
+}
+
+#status h1 {
+	margin: 0;
+	font-size: clamp(28px, 7vw, 56px);
+	letter-spacing: 1px;
+	color: #ffc733;
+}
+
+#status .sub {
+	margin: -6px 0 6px;
+	opacity: 0.7;
+	font-size: 14px;
+	letter-spacing: 2px;
+}
+
+#bar {
+	width: min(520px, 80vw);
+	height: 14px;
+	border-radius: 7px;
+	background: rgba(255, 255, 255, 0.15);
+	overflow: hidden;
+}
+
+#bar-fill {
+	width: 0%;
+	height: 100%;
+	border-radius: 7px;
+	background: linear-gradient(90deg, #4cc3ff, #ffc733);
+	transition: width 0.2s;
+}
+
+#bar.indeterminate #bar-fill {
+	width: 30%;
+	animation: slide 1.2s ease-in-out infinite;
+}
+
+@keyframes slide {
+	from { margin-left: -30%; }
+	to { margin-left: 100%; }
+}
+
+#status-text {
+	font-size: 15px;
+	opacity: 0.85;
+	min-height: 1.3em;
+}
+
+#status-note {
+	font-size: 13px;
+	opacity: 0.65;
+	max-width: 520px;
+}
+
+#status-error {
+	display: none;
+	max-width: 560px;
+	background: #5b3943;
+	border: 1px solid #c25060;
+	border-radius: 10px;
+	padding: 14px 18px;
+	line-height: 1.4;
+	font-size: 15px;
+	white-space: pre-line;
+}
+
+button.reload {
+	display: none;
+	font: inherit;
+	font-size: 17px;
+	font-weight: 600;
+	color: #1a1305;
+	background: #ffc733;
+	border: 0;
+	border-radius: 10px;
+	padding: 12px 28px;
+}
+
+#rotate {
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 10px;
+	background: rgba(0, 0, 0, 0.65);
+	text-align: center;
+	font-size: 15px;
+	z-index: 3;
+	pointer-events: none;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+	#rotate {
+		display: block;
+	}
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			<div style="padding: 2rem; text-align: center;">This game needs JavaScript. Please enable it and reload.</div>
+		</noscript>
+
+		<div id="status">
+			<h1>HIGHWAY BLITZ</h1>
+			<div class="sub">GODOT EDITION</div>
+			<div id="bar" class="indeterminate"><div id="bar-fill"></div></div>
+			<div id="status-text">Loading...</div>
+			<div id="status-note"></div>
+			<div id="status-error"></div>
+			<button class="reload" id="reload" type="button">Reload</button>
+		</div>
+
+		<div id="rotate">Turn your phone sideways (landscape) to play.</div>
+
+		<script>
+// Shared helpers, defined before the engine script so they also catch its load errors.
+var hbStatus = {
+	done: false,
+	failed: false,
+	fail: function (msg) {
+		if (hbStatus.done || hbStatus.failed) return;
+		hbStatus.failed = true;
+		var el = document.getElementById('status-error');
+		el.textContent = msg;
+		el.style.display = 'block';
+		document.getElementById('bar').style.display = 'none';
+		document.getElementById('status-text').textContent = 'The game could not start.';
+		document.getElementById('status-note').textContent = '';
+		document.getElementById('reload').style.display = 'inline-block';
+	},
+};
+document.getElementById('reload').addEventListener('click', function () {
+	window.location.reload();
+});
+window.addEventListener('error', function (e) {
+	if (!hbStatus.done) hbStatus.fail('Error: ' + (e.message || 'a file failed to load') + '\nCheck your connection and tap Reload.');
+});
+window.addEventListener('unhandledrejection', function (e) {
+	if (!hbStatus.done) hbStatus.fail('Error: ' + ((e.reason && e.reason.message) || e.reason || 'unknown'));
+});
+		</script>
+		<script src="$GODOT_URL" onerror="hbStatus.fail('Could not download the game engine ($GODOT_URL).\nCheck your connection and tap Reload.')"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+
+(function () {
+	const statusEl = document.getElementById('status');
+	const bar = document.getElementById('bar');
+	const fill = document.getElementById('bar-fill');
+	const text = document.getElementById('status-text');
+	const note = document.getElementById('status-note');
+
+	if (typeof Engine === 'undefined') {
+		hbStatus.fail('Could not load the game engine script.\nCheck your connection and tap Reload.');
+		return;
+	}
+
+	// WebGL 2 is required by Godot's Compatibility renderer.
+	let gl2 = false;
+	try {
+		gl2 = !!document.createElement('canvas').getContext('webgl2');
+	} catch (err) {
+		gl2 = false;
+	}
+	if (!gl2) {
+		hbStatus.fail('Your browser or device does not support WebGL 2, which this game needs.\nTry the latest Chrome, Firefox, Edge or Safari.');
+		return;
+	}
+
+	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+	if (missing.length !== 0) {
+		hbStatus.fail('Your browser is missing features this game needs:\n' + missing.join('\n'));
+		return;
+	}
+
+	// Total download size from the export (uncompressed bytes).
+	let totalBytes = 0;
+	const sizes = GODOT_CONFIG['fileSizes'] || {};
+	for (const k in sizes) totalBytes += sizes[k];
+	const mb = (b) => (b / 1048576).toFixed(1);
+
+	let lastProgress = Date.now();
+	let lastCurrent = 0;
+	const slowTimer = setInterval(function () {
+		if (hbStatus.done || hbStatus.failed) {
+			clearInterval(slowTimer);
+			return;
+		}
+		const idle = (Date.now() - lastProgress) / 1000;
+		if (idle > 25) {
+			note.textContent = 'Still loading... this is taking a while (slow connection?). Keep this page open, or tap Reload.';
+			document.getElementById('reload').style.display = 'inline-block';
+		}
+	}, 1000);
+
+	const engine = new Engine(GODOT_CONFIG);
+	engine.startGame({
+		'onProgress': function (current, total) {
+			const t = total > 0 ? total : totalBytes;
+			if (current !== lastCurrent) {
+				lastCurrent = current;
+				lastProgress = Date.now();
+			}
+			if (current > 0 && t > 0) {
+				const pct = Math.min(100, Math.round((current / t) * 100));
+				bar.classList.remove('indeterminate');
+				fill.style.width = pct + '%';
+				text.textContent = 'Loading ' + pct + '%  (' + mb(current) + ' / ' + mb(t) + ' MB)';
+				if (pct >= 100) text.textContent = 'Starting...';
+			}
+		},
+	}).then(function () {
+		hbStatus.done = true;
+		clearInterval(slowTimer);
+		statusEl.remove();
+	}, function (err) {
+		console.error(err);
+		hbStatus.fail('Error: ' + ((err && err.message) || err || 'unknown') + '\nTap Reload to try again.');
+	});
+
+	// Phones: go fullscreen and lock landscape on the first tap.
+	const isPhone = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+	if (isPhone) {
+		const goLandscape = function () {
+			window.removeEventListener('pointerup', goLandscape, true);
+			const el = document.documentElement;
+			const req = el.requestFullscreen || el.webkitRequestFullscreen;
+			if (!req) return;
+			try {
+				const p = req.call(el, { navigationUI: 'hide' });
+				if (p && p.then) {
+					p.then(function () {
+						if (screen.orientation && screen.orientation.lock) {
+							screen.orientation.lock('landscape').catch(function () {});
+						}
+					}).catch(function () {});
+				}
+			} catch (err) {
+				// Fullscreen not allowed; the rotate hint stays visible instead.
+			}
+		};
+		window.addEventListener('pointerup', goLandscape, true);
+	}
+}());
+		</script>
+	</body>
+</html>

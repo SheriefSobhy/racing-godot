@@ -4,11 +4,13 @@ A 3D arcade highway racer for phones, made in Godot 4.7 with GDScript. It is the
 the Three.js version, [racing-3d](https://github.com/SheriefSobhy/racing-3d), rebuilt so the
 two engines can be compared. Free CC0 assets only (see [CREDITS.md](CREDITS.md)).
 
-**Play:** https://sheriefsobhy.github.io/racing-godot/
+**Play:** https://sheriefsobhy.github.io/racing-godot/ (turn the phone sideways; the first tap goes fullscreen)
+
+**Android APK:** [latest release](https://github.com/SheriefSobhy/racing-godot/releases/latest)
 
 ## How to play
 
-- The car accelerates by itself. Steer with the left / right buttons, or pick **TILT** on the start screen.
+- The car accelerates by itself. Steer with the big left / right buttons (the default), or pick **TILT** on the start screen. You can hold a steer button and NITRO or DRIFT at the same time.
 - **NITRO** gives a burst of speed (flames and a wider camera view). The bar fills slowly over time, from blue nitro pickups, from near misses, and by drifting.
 - Hold **DRIFT** to slide the tail out through curves. It fills nitro fast and leaves smoke and skid marks.
 - Dodge the traffic. A crash knocks the other car away with real physics; **3 crashes end the run**.
@@ -16,6 +18,7 @@ two engines can be compared. Free CC0 assets only (see [CREDITS.md](CREDITS.md))
 - Spend coins in the **Garage** on 3 more cars.
 - **CAM** switches the view: chase, far chase, hood, bumper.
 - **SETTINGS**: camera view, field of view, distance, height, smooth follow, camera shake, speed FOV boost, graphics Low / High, FPS counter, sound and music volume, mute, and invert tilt. Settings and progress are saved on the device.
+- With the FPS counter on, a small line above the buttons shows the last touch (finger, position, button) and which buttons are held: a quick check that touch input works.
 
 Keyboard: arrows / A D steer, Space / W nitro, Shift / S drift, C camera, Esc / P pause, Enter start.
 
@@ -31,14 +34,16 @@ Keyboard: arrows / A D steer, Space / W nitro, Shift / S drift, C camera, Esc / 
 | Tyre smoke, sparks, nitro flames, skid marks | `scripts/effects.gd` |
 | Chase / far / hood / bumper camera, shake, FOV boost | `scripts/camera_rig.gd` |
 | Engine and effect sounds, music | `scripts/sound.gd` |
-| HUD and all screens; touch buttons | `scripts/ui.gd`, `scripts/touch_controls.gd` |
+| HUD and all screens; touch buttons (`TouchScreenButton`, multi-touch) | `scripts/ui.gd`, `scripts/touch_controls.gd` |
+| Web page: loading bar, error messages, rotate hint, fullscreen + landscape on first tap | `web/shell.html` |
 | Game flow and scoring | `scripts/main.gd` |
 | Settings and progress | `scripts/save.gd` (autoload `Save`) |
 
 Rendering: the **Mobile** renderer on Android, the **Compatibility** renderer for the web
 build (exported without threads, so it runs on GitHub Pages). Graphics **High** adds sun
 shadows, 2x MSAA, normal maps and more trees; **Low** turns those off and renders at 80 %
-resolution. Phones start on Low. If a race runs under about 48 fps, the 3D resolution
+resolution. Phones start on Low. Textures are stored as lossy WebP (not VRAM-compressed),
+which keeps the web download small (about 3.8 MB of game data plus the 10 MB compressed engine). If a race runs under about 48 fps, the 3D resolution
 steps down automatically (down to 60 %). Frame rate is capped at 60.
 
 ## Building
@@ -56,6 +61,8 @@ Godot 4.7.2 is expected at `C:\Godot\Godot_v4.7.2-stable_win64_console.exe`.
 - `tools/test_drive.gd`: headless autopilot that drives the real physics car and reports lane
   keeping, lane-change time, drift angle and crashes.
   `godot --headless --path . --fixed-fps 60 -s res://tools/test_drive.gd -- secs=60 traffic=1`
+- `tools/test_touch.gd`: simulates fingers on the on-screen buttons (two at once) and checks
+  that the car steers, boosts and drifts. Run windowed: `godot --path . -s res://tools/test_touch.gd`
 - `tools/perf.gd`: frame-time test (run windowed; add `--rendering-method gl_compatibility`
   for the web renderer).
 - `tools/screenshot.gd`: captures every screen to PNG files.
