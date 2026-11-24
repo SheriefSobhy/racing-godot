@@ -1,0 +1,20 @@
+# Normalize EOL for all files that Git considers text files.
+* text=auto eol=lf
+
+# Windows batch files need CRLF line endings.
+*.bat text eol=crlf
+
+# Binary assets and web build output: never touch line endings.
+*.hdr binary
+*.glb binary
+*.bin binary
+*.jpg binary
+*.png binary
+*.ogg binary
+*.wav binary
+*.res binary
+*.pck binary
+*.wasm binary
+*.webp binary
+*.mp3 binary
+*.apk binary
